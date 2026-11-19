@@ -189,28 +189,29 @@ async function seedProductos() {
   console.log('  ✓ Productos')
 }
 
-// ---------------------------------------------------------------------------
-// Descuentos + tabla de unión DescuentoProducto
-// Campos omitidos del mock: fecha_inicio, fecha_fin (no están en schema)
-// ---------------------------------------------------------------------------
+// --------------------------------------------------------------------------- 
+// Descuentos + tabla de unión DescuentoProducto 
+// --------------------------------------------------------------------------- 
 async function seedDescuentos() {
-  await prisma.descuento.createMany({
-    data: descuentos.map((d) => ({
-      id: d.id,
-      nombre: d.nombre,
-      porcentaje: d.porcentaje,
-      activo: d.activo,
-    })),
-  })
-
-  const relaciones = descuentos.flatMap((d) =>
-    d.productos_ids.map((productoId) => ({
+  await prisma.descuento.createMany({ 
+    data: descuentos.map((d) => ({ 
+      id: d.id, 
+      nombre: d.nombre, 
+      porcentaje: d.porcentaje, 
+      activo: d.activo, 
+      fechaInicio: new Date(), 
+      fechaFin: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Vigencia de 30 días 
+    })), 
+  }) 
+  
+  const relaciones = descuentos.flatMap((d) => 
+    d.productos_ids.map((productoId) => ({ 
       descuentoId: d.id,
-      productoId,
-    }))
-  )
-  await prisma.descuentoProducto.createMany({ data: relaciones })
-  console.log('  ✓ Descuentos')
+      productoId, 
+    })) 
+  ) 
+  await prisma.descuentoProducto.createMany({ data: relaciones }) 
+  console.log(' ✓ Descuentos') 
 }
 
 // ---------------------------------------------------------------------------
