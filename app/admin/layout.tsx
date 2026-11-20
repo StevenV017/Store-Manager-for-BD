@@ -17,6 +17,7 @@ import {
   Menu,
   Receipt,
   ListOrdered,
+  Calculator
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LogoutButton } from "@/components/logout-button"
@@ -25,6 +26,7 @@ import {ThemeToggle} from "@/components/theme-toggle"
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/ventas", label: "Historial de Ventas", icon: Receipt },
+  { href: "/admin/cortes", label: "Cortes de Caja", icon: Calculator },
   { href: "/admin/movimientos", label: "Movimientos", icon: ListOrdered },
   { href: "/admin/ordenes", label: "Órdenes de Compra", icon: ClipboardList },
   { href: "/admin/descuentos", label: "Descuentos", icon: Tags },

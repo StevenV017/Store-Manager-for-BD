@@ -41,6 +41,7 @@ model Usuario {
   ventas       Venta[]
   ordenes      OrdenCompra[]
   movimientos  MovimientoInventario[]
+  cortesCaja   CorteCaja[]
 }
 
 model Token {
@@ -150,10 +151,12 @@ model DescuentoProducto {
 model Venta {
   id         Int             @id @default(autoincrement())
   cajeroId   Int
+  corteId    Int?
   fechaHora  DateTime        @default(now())
   total      Decimal
 
   cajero     Usuario         @relation(fields: [cajeroId], references: [id])
+  corte      CorteCaja?      @relation(fields: [corteId], references: [id])
   detalles   VentaDetalle[]
 }
 
@@ -212,4 +215,23 @@ model MovimientoInventario {
   @@index([productoId, fechaHora])
   @@index([tipo])
   @@index([usuarioId])
+}
+
+model CorteCaja {
+  id               Int       @id @default(autoincrement())
+  cajeroId         Int
+  fechaApertura    DateTime  @default(now())
+  fechaCierre      DateTime?
+  fondoInicial     Decimal
+  ventasTotales    Decimal?  // Calculado por el servidor al cerrar
+  efectivoEsperado Decimal?  // fondoInicial + ventasTotales
+  efectivoReal     Decimal?  // Capturado a ciegas por el cajero
+  diferencia       Decimal?  // efectivoReal - efectivoEsperado
+  observaciones    String?
+  estado           String    @default("abierto") // "abierto" | "cerrado"
+
+  cajero           Usuario   @relation(fields: [cajeroId], references: [id])
+  ventas           Venta[]
+
+  @@index([cajeroId, estado])
 }

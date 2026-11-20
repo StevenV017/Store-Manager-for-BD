@@ -4,6 +4,16 @@ import { useState, useMemo, useTransition, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   Search,
   ShoppingCart,
@@ -16,11 +26,18 @@ import {
   Percent,
   Loader2,
   RefreshCw,
+  Calculator,
 } from "lucide-react"
 import { LogoutButton } from "@/components/logout-button"
-import { registrarVenta } from "./actions"
-import type { ProductoPOS, CategoriaPOS } from "./actions"
 import { ThemeToggle } from "@/components/theme-toggle"
+import {
+  registrarVenta,
+  abrirCaja,
+  cerrarCorteCiego,
+  type ProductoPOS,
+  type CategoriaPOS,
+  type CorteActivoPOS,
+} from "./actions"
 
 const SYNC_INTERVAL_MS = 30_000 // 30 segundos
 
@@ -30,9 +47,15 @@ interface POSClientProps {
   productos: ProductoPOS[]
   categorias: CategoriaPOS[]
   cajeroNombre: string
+  corteActivoInicial: CorteActivoPOS | null
 }
 
-export function POSClient({ productos, categorias, cajeroNombre }: POSClientProps) {
+export function POSClient({
+  productos,
+  categorias,
+  cajeroNombre,
+  corteActivoInicial,
+}: POSClientProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null)
   const [cart, setCart] = useState<CartItem[]>([])
@@ -41,6 +64,17 @@ export function POSClient({ productos, categorias, cajeroNombre }: POSClientProp
   const [isPending, startTransition] = useTransition()
   const [isSyncing, setIsSyncing] = useState(false)
   const [lastSync, setLastSync] = useState<Date>(new Date())
+
+  // Estados de apertura y corte de caja ciego
+  const [corteActivo, setCorteActivo] = useState<CorteActivoPOS | null>(corteActivoInicial)
+  const [fondoInicialInput, setFondoInicialInput] = useState("")
+  const [corteError, setCorteError] = useState<string | null>(null)
+  const [isCortePending, setIsCortePending] = useState(false)
+  const [isCorteModalOpen, setIsCorteModalOpen] = useState(false)
+  const [efectivoContadoInput, setEfectivoContadoInput] = useState("")
+  const [observacionesCorte, setObservacionesCorte] = useState("")
+  const [corteCerradoMsg, setCorteCerradoMsg] = useState(false)
+
   const router = useRouter()
 
   const syncData = useCallback(() => {
@@ -49,6 +83,10 @@ export function POSClient({ productos, categorias, cajeroNombre }: POSClientProp
     setLastSync(new Date())
     setTimeout(() => setIsSyncing(false), 800)
   }, [router])
+
+  useEffect(() => {
+    setCorteActivo(corteActivoInicial)
+  }, [corteActivoInicial])
 
   useEffect(() => {
     const interval = setInterval(syncData, SYNC_INTERVAL_MS)
@@ -64,7 +102,7 @@ export function POSClient({ productos, categorias, cajeroNombre }: POSClientProp
       return matchesSearch && matchesCategory
     })
   }, [productos, searchQuery, selectedCategory])
-
+  
   const addToCart = (product: ProductoPOS) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id)
@@ -112,7 +150,7 @@ export function POSClient({ productos, categorias, cajeroNombre }: POSClientProp
 
   const total = subtotal
 
-  const handleFinalizarVenta = () => {
+const handleFinalizarVenta = () => {
     setError(null)
     startTransition(async () => {
       const items = cart.map((item) => ({
@@ -132,6 +170,49 @@ export function POSClient({ productos, categorias, cajeroNombre }: POSClientProp
         setError(resultado.error)
       }
     })
+  }
+
+  const handleAbrirCaja = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setCorteError(null)
+    const monto = parseFloat(fondoInicialInput)
+    if (Number.isNaN(monto) || monto < 0) {
+      setCorteError("Ingresa un monto válido (ej. 500.00)")
+      return
+    }
+    setIsCortePending(true)
+    const res = await abrirCaja(monto)
+    setIsCortePending(false)
+    if (res.success) {
+      setCorteActivo(res.corte)
+      setFondoInicialInput("")
+      setCorteCerradoMsg(false)
+    } else {
+      setCorteError(res.error)
+    }
+  }
+
+  const handleCerrarCorteCiego = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setCorteError(null)
+    const efectivoReal = parseFloat(efectivoContadoInput)
+    if (Number.isNaN(efectivoReal) || efectivoReal < 0) {
+      setCorteError("Ingresa el total de efectivo contado en caja")
+      return
+    }
+    setIsCortePending(true)
+    const res = await cerrarCorteCiego(efectivoReal, observacionesCorte)
+    setIsCortePending(false)
+    if (res.success) {
+      setIsCorteModalOpen(false)
+      setEfectivoContadoInput("")
+      setObservacionesCorte("")
+      setCorteActivo(null)
+      setCorteCerradoMsg(true)
+      router.refresh()
+    } else {
+      setCorteError(res.error)
+    }
   }
 
   const handleNuevaVenta = () => {
@@ -193,6 +274,23 @@ export function POSClient({ productos, categorias, cajeroNombre }: POSClientProp
               <User className="w-4 h-4" />
               <span className="text-sm">{cajeroNombre}</span>
             </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <User className="w-4 h-4" />
+              <span className="text-sm">{cajeroNombre}</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setCorteError(null)
+                setIsCorteModalOpen(true)
+              }}
+              disabled={!corteActivo}
+              className="gap-1.5"
+            >
+              <Calculator className="w-4 h-4" />
+              <span>Corte de Caja</span>
+            </Button>
             <ThemeToggle />
             <LogoutButton />
           </div>
@@ -441,6 +539,99 @@ export function POSClient({ productos, categorias, cajeroNombre }: POSClientProp
           </div>
         </div>
       </div>
+
+      {/* Modal obligatorio de Apertura de Caja */}
+      <Dialog open={!corteActivo} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>Apertura de Turno en Caja</DialogTitle>
+            <DialogDescription>
+              {corteCerradoMsg
+                ? "Tu corte de caja anterior se registró correctamente. Ingresa el fondo inicial para comenzar un nuevo turno."
+                : "Ingresa el efectivo inicial (morralla/cambio) con el que abres tu caja antes de registrar ventas."}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAbrirCaja} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fondoInicial">Fondo inicial en efectivo ($)</Label>
+              <Input
+                id="fondoInicial"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={fondoInicialInput}
+                onChange={(e) => setFondoInicialInput(e.target.value)}
+                required
+                autoFocus
+              />
+            </div>
+            {corteError && (
+              <p className="text-sm text-destructive">{corteError}</p>
+            )}
+            <DialogFooter className="flex justify-between sm:justify-between gap-2">
+              <LogoutButton />
+              <Button type="submit" disabled={isCortePending}>
+                {isCortePending ? "Abriendo caja..." : "Iniciar Turno"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Corte de Caja Ciego */}
+      <Dialog open={isCorteModalOpen} onOpenChange={setIsCorteModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Corte de Caja Ciego</DialogTitle>
+            <DialogDescription>
+              Cuenta el efectivo físico total que hay en tu gaveta (incluyendo tu fondo inicial de ${corteActivo?.fondoInicial.toFixed(2)}) e ingrésalo abajo.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCerrarCorteCiego} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="efectivoContado">Efectivo total contado ($)</Label>
+              <Input
+                id="efectivoContado"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={efectivoContadoInput}
+                onChange={(e) => setEfectivoContadoInput(e.target.value)}
+                required
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="observacionesCorte">Observaciones (opcional)</Label>
+              <Textarea
+                id="observacionesCorte"
+                placeholder="Ej. Retiro parcial, billetes deteriorados, incidencias del turno..."
+                value={observacionesCorte}
+                onChange={(e) => setObservacionesCorte(e.target.value)}
+                rows={3}
+              />
+            </div>
+            {corteError && (
+              <p className="text-sm text-destructive">{corteError}</p>
+            )}
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsCorteModalOpen(false)}
+                disabled={isCortePending}
+              >
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isCortePending}>
+                {isCortePending ? "Cerrando turno..." : "Confirmar Corte Ciego"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
