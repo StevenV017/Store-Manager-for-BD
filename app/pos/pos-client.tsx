@@ -20,6 +20,7 @@ import {
 import { LogoutButton } from "@/components/logout-button"
 import { registrarVenta } from "./actions"
 import type { ProductoPOS, CategoriaPOS } from "./actions"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 const SYNC_INTERVAL_MS = 30_000 // 30 segundos
 
@@ -192,6 +193,7 @@ export function POSClient({ productos, categorias, cajeroNombre }: POSClientProp
               <User className="w-4 h-4" />
               <span className="text-sm">{cajeroNombre}</span>
             </div>
+            <ThemeToggle />
             <LogoutButton />
           </div>
         </div>

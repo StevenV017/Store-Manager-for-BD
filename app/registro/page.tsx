@@ -36,7 +36,7 @@ export default function RegistroPage() {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yLjIwOS0xLjc5MS00LTQtNHMtNCAxLjc5MS00IDQgMS43OTEgNCA0IDQgNC0xLjc5MSA0LTQiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30" />
         <div className="relative z-10 flex flex-col justify-center items-center w-full p-12 text-white">
           <div className="flex items-center gap-4 mb-8">
-            <div className="w-40 h-40 rounded-3xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-2xl overflow-hidden">
+            <div className="w-40 h-40 rounded-3xl bg-card/20 backdrop-blur-sm flex items-center justify-center shadow-2xl overflow-hidden">
               <img src="/icon.png" alt="Logotipo" />
             </div>
           </div>
@@ -46,7 +46,7 @@ export default function RegistroPage() {
           </p>
           <div className="mt-12 space-y-4 text-left max-w-sm">
             {["Control total de inventario", "Reportes en tiempo real", "Gestión de proveedores", "Punto de venta integrado"].map((feature, i) => (
-              <div key={i} className="flex items-center gap-3 bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <div key={i} className="flex items-center gap-3 bg-card/10 backdrop-blur-sm rounded-xl p-4">
                 <CheckCircle2 className="w-5 h-5 text-white/90 shrink-0" />
                 <span className="text-white/90">{feature}</span>
               </div>

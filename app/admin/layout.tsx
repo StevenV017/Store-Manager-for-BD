@@ -20,6 +20,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LogoutButton } from "@/components/logout-button"
+import {ThemeToggle} from "@/components/theme-toggle"
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -165,7 +166,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <div className="w-10 h-10 rounded-xl bg-linear-to-br from-primary/20 to-accent/20 flex items-center justify-center">
               <span className="font-bold text-primary">AP</span>
             </div>
-            <LogoutButton />
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+              <LogoutButton />
+            </div>
           </div>
         </header>
 
